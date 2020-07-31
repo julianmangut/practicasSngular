@@ -4,6 +4,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -23,6 +24,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 
 import com.google.api.services.calendar.model.Event;
 import com.google.api.services.calendar.model.EventDateTime;
+import com.practicas.model.LocalEvent;
 
 @Service
 public class CalendarService {
@@ -37,6 +39,9 @@ public class CalendarService {
 
 	@Autowired
 	private CalendarUtils calendarUtils;
+	
+	@Autowired
+	private MapUtils mapUtils;
 
 	private Event createEvent() {
 
@@ -52,7 +57,7 @@ public class CalendarService {
 
 	}
 
-	private void possibleHours(JSONArray eventsInfo, DateTime startWorkingHour, DateTime endWorkingHour,
+	private List<LocalEvent> possibleHours(JSONArray eventsInfo, DateTime startWorkingHour, DateTime endWorkingHour,
 			DateTime durationStimated) {
 
 		boolean firstWorkingTask = false;
@@ -60,6 +65,8 @@ public class CalendarService {
 
 		DateTime differenceTime;
 		DateTime previousEndTaskHour = new DateTime();
+
+		List<LocalEvent> bestCombination = new LinkedList<>();
 
 		for (int i = 0; i < eventsInfo.length(); i++) {
 
@@ -95,6 +102,16 @@ public class CalendarService {
 				}
 
 				if (differenceTime.isAfter(durationStimated) || differenceTime.equals(durationStimated)) {
+
+					DateTime endTaskHour = formatter.parseDateTime(eventsInfo.getJSONObject(i)
+							.getJSONObject(START_STRING).getString(DATETIME_STRING).substring(11, 19));
+
+					if (eventsInfo.getJSONObject(i).has("location"))
+						bestCombination.add(new LocalEvent(startTaskHour, endTaskHour,
+								eventsInfo.getJSONObject(i).getString("location")));
+					else
+						bestCombination.add(new LocalEvent(startTaskHour, endTaskHour));
+
 					LOGGER.log(Level.INFO, "{0}", differenceTime.toString("HH:mm:ss"));
 				}
 
@@ -102,6 +119,7 @@ public class CalendarService {
 				e.printStackTrace();
 			}
 		}
+		return bestCombination;
 
 	}
 
@@ -147,7 +165,7 @@ public class CalendarService {
 
 	}
 
-	public void getBestHour(@RegisteredOAuth2AuthorizedClient("google") OAuth2AuthorizedClient user,
+	public List<LocalEvent> getBestHour(@RegisteredOAuth2AuthorizedClient("google") OAuth2AuthorizedClient user,
 			@PathVariable String date, @PathVariable String hours) {
 
 		String startDate = date.concat("T00:00:00Z");
@@ -163,11 +181,12 @@ public class CalendarService {
 
 		JSONObject response = calendarUtils.getBestHourOwnCalendar(user, startDate, endDate);
 
-		if (response != null) {
+		if (response.getJSONArray(ITEMS_JSONARRAY) != null) {
 			JSONArray arr = response.getJSONArray(ITEMS_JSONARRAY);
 
-			possibleHours(arr, startWorkingHour, endWorkingHour, durationStimated);
+			return possibleHours(arr, startWorkingHour, endWorkingHour, durationStimated);
 		}
+		return new LinkedList<>();
 
 	}
 
@@ -211,6 +230,26 @@ public class CalendarService {
 		arr = sortJSON(arr);
 
 		possibleHours(arr, startWorkingHour, endWorkingHour, durationStimated);
+
+	}
+
+	public void getBestCombination(@RegisteredOAuth2AuthorizedClient("google") OAuth2AuthorizedClient user,
+			@PathVariable String date, @PathVariable String hours) {
+
+		List<LocalEvent> bestCombination = getBestHour(user, date, hours);
+
+		for (int i = 0; i < bestCombination.size(); i++) {
+			if (bestCombination.get(i).getLocation() != null) {
+				JSONObject response = mapUtils.getInfoPlace(bestCombination.get(i).getLocation());
+				
+				if(response != null) {
+					JSONObject position = response.getJSONArray(ITEMS_JSONARRAY).getJSONObject(0).getJSONObject("position");
+					
+					bestCombination.get(i).setLatitude(Float.valueOf(position.getString("lat")));
+					bestCombination.get(i).setLongitude(Float.valueOf(position.getString("lng")));
+				}
+			}
+		}
 
 	}
 

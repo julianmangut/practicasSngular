@@ -31,10 +31,16 @@ public class CalendarController {
 		calendarService.getBestHour(user, date, hours);
 	}
 	
-	@GetMapping(path = "/bestHourMoreCalendars/{email}/{date}/{hours}")
+	@GetMapping(path = "/bestHourMoreCalendars/email={email}/{date}/{hours}")
 	public void bestHourMoreCalendars(@RegisteredOAuth2AuthorizedClient("google") OAuth2AuthorizedClient user,
 			@PathVariable String email, @PathVariable String date, @PathVariable String hours) {
 		calendarService.bestHourMoreCalendars(user, email, date, hours);
+	}
+	
+	@GetMapping(path = "/bestCombination/place={place}/{date}/{hours}")
+	public void getBestCombination(@RegisteredOAuth2AuthorizedClient("google") OAuth2AuthorizedClient user,
+			@PathVariable String place, @PathVariable String date, @PathVariable String hours) {
+		calendarService.getBestCombination(user, date, hours);
 	}
 	
 	@PostMapping(path = "/addEvent")

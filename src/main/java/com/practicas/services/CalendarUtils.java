@@ -23,7 +23,7 @@ public class CalendarUtils {
 	private static final String ERROR = "Error while processing request";
 	private static final String CORRECT = "The request was process correctly";
 	private static final String AUTHORIZATION_HEADER = "Authorization";
-	private static final String BEARER_TOKEN = "Bearer";
+	private static final String BEARER_TOKEN = "Bearer ";
 
 	public JSONObject getEvents2DaysBack(OAuth2AuthorizedClient user, String date) {
 
