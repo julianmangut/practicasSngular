@@ -10,6 +10,8 @@ public class LocalEvent {
 	private float longitude;
 	private String location;
 
+	private LocalEvent previousEvent;
+
 	public LocalEvent() {
 
 	}
@@ -73,6 +75,14 @@ public class LocalEvent {
 
 	public void setLocation(String location) {
 		this.location = location;
+	}
+
+	public LocalEvent getPreviousEvent() {
+		return previousEvent;
+	}
+
+	public void setPreviousEvent(LocalEvent previousEvent) {
+		this.previousEvent = previousEvent;
 	}
 
 }

@@ -18,9 +18,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
-import org.springframework.security.oauth2.client.annotation.RegisteredOAuth2AuthorizedClient;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.PathVariable;
 
 import com.google.api.services.calendar.model.Event;
 import com.google.api.services.calendar.model.EventDateTime;
@@ -36,10 +34,13 @@ public class CalendarService {
 	private static final String START_STRING = "start";
 	private static final String DATETIME_STRING = "dateTime";
 	private static final String END_STRING = "end";
+	private static final String LOCATION_STRING = "location";
+	private static final String DISTANCE_STRING = "distance";
+	private static final String POSITION_STRING = "position";
 
 	@Autowired
 	private CalendarUtils calendarUtils;
-	
+
 	@Autowired
 	private MapUtils mapUtils;
 
@@ -66,6 +67,7 @@ public class CalendarService {
 		DateTime differenceTime;
 		DateTime previousEndTaskHour = new DateTime();
 
+		LocalEvent localEvent;
 		List<LocalEvent> bestCombination = new LinkedList<>();
 
 		for (int i = 0; i < eventsInfo.length(); i++) {
@@ -85,6 +87,7 @@ public class CalendarService {
 
 				else if (!firstWorkingTask && !startTaskHour.isBefore(startWorkingHour)) {
 					differenceTime = startTaskHour.minusMinutes(startWorkingHour.getMinuteOfDay());
+					previousEndTaskHour = endWorkingHour;
 
 					firstWorkingTask = true;
 				}
@@ -106,11 +109,23 @@ public class CalendarService {
 					DateTime endTaskHour = formatter.parseDateTime(eventsInfo.getJSONObject(i)
 							.getJSONObject(START_STRING).getString(DATETIME_STRING).substring(11, 19));
 
-					if (eventsInfo.getJSONObject(i).has("location"))
-						bestCombination.add(new LocalEvent(startTaskHour, endTaskHour,
-								eventsInfo.getJSONObject(i).getString("location")));
-					else
-						bestCombination.add(new LocalEvent(startTaskHour, endTaskHour));
+					localEvent = new LocalEvent(startTaskHour, endTaskHour);
+
+					if (!previousEndTaskHour.equals(endWorkingHour)
+							&& eventsInfo.getJSONObject(i - 1).has(LOCATION_STRING)) {
+						localEvent.setPreviousEvent(new LocalEvent(null, previousEndTaskHour,
+								eventsInfo.getJSONObject(i - 1).getString(LOCATION_STRING)));
+					} else {
+						localEvent.setPreviousEvent(new LocalEvent(null, previousEndTaskHour));
+					}
+
+					if (eventsInfo.getJSONObject(i).has(LOCATION_STRING)) {
+
+						localEvent.setLocation(eventsInfo.getJSONObject(i).getString(LOCATION_STRING));
+
+						bestCombination.add(localEvent);
+					} else
+						bestCombination.add(localEvent);
 
 					LOGGER.log(Level.INFO, "{0}", differenceTime.toString("HH:mm:ss"));
 				}
@@ -121,6 +136,62 @@ public class CalendarService {
 		}
 		return bestCombination;
 
+	}
+
+	private void samePlace(float longitude, float latitude, LocalEvent processEvent, List<LocalEvent> bestCombination) {
+
+		for (int j = 0; j < bestCombination.size(); j++) {
+			if ((bestCombination.get(j).getLatitude() == 0.0)
+					&& (bestCombination.get(j).getPreviousEvent().getLatitude() == 0.0)) {
+				if ((bestCombination.get(j).getLatitude() == 0.0)
+						&& bestCombination.get(j).getLocation().equals(processEvent.getLocation())) {
+					bestCombination.get(j).setLatitude(latitude);
+					bestCombination.get(j).setLongitude(longitude);
+				} else {
+					bestCombination.get(j).getPreviousEvent().setLatitude(latitude);
+					bestCombination.get(j).getPreviousEvent().setLongitude(longitude);
+				}
+			}
+		}
+
+	}
+
+	private LocalEvent minorDistance(List<LocalEvent> infoEvents, String place) {
+
+		float minorDistanceCalculate = 99999;
+		LocalEvent finalEvent = null;
+
+		for (int i = 0; i < infoEvents.size(); i++) {
+			if (infoEvents.get(i).getPreviousEvent().getLocation() != null) {
+				JSONObject response = mapUtils.getDistanceBetweenPlaces(String.valueOf(infoEvents.get(i).getLatitude()),
+						String.valueOf(infoEvents.get(i).getLongitude()), place);
+
+				if (response != null) {
+					float distance = Float.parseFloat(
+							response.getJSONArray(ITEMS_JSONARRAY).getJSONObject(0).getString(DISTANCE_STRING));
+
+					if (distance < minorDistanceCalculate) {
+						JSONObject childResponse = mapUtils.getDistanceBetweenPlaces(
+								response.getJSONArray(ITEMS_JSONARRAY).getJSONObject(0).getJSONObject(POSITION_STRING)
+										.getString("lat"),
+								response.getJSONArray(ITEMS_JSONARRAY).getJSONObject(0).getJSONObject(POSITION_STRING)
+										.getString("lng"),
+								infoEvents.get(i).getPreviousEvent().getLocation());
+
+						if (childResponse != null) {
+							float childDistance = Float.parseFloat(childResponse.getJSONArray(ITEMS_JSONARRAY)
+									.getJSONObject(0).getString(DISTANCE_STRING));
+
+							if (childDistance + distance < minorDistanceCalculate) {
+								minorDistanceCalculate = childDistance + distance;
+								finalEvent = infoEvents.get(i);
+							}
+						}
+					}
+				}
+			}
+		}
+		return finalEvent;
 	}
 
 	public JSONArray sortJSON(JSONArray valuesJSON) {
@@ -149,7 +220,7 @@ public class CalendarService {
 
 	}
 
-	public void getUser(@RegisteredOAuth2AuthorizedClient("google") OAuth2AuthorizedClient user) {
+	public void getUser(OAuth2AuthorizedClient user) {
 
 		Clock clock = Clock.systemDefaultZone();
 		String date = Instant.now(clock).minus(2, ChronoUnit.DAYS).toString();
@@ -165,8 +236,7 @@ public class CalendarService {
 
 	}
 
-	public List<LocalEvent> getBestHour(@RegisteredOAuth2AuthorizedClient("google") OAuth2AuthorizedClient user,
-			@PathVariable String date, @PathVariable String hours) {
+	public List<LocalEvent> getBestHour(OAuth2AuthorizedClient user, String date, String hours) {
 
 		String startDate = date.concat("T00:00:00Z");
 		String endDate = date.concat("T23:59:00Z");
@@ -190,8 +260,7 @@ public class CalendarService {
 
 	}
 
-	public void bestHourMoreCalendars(@RegisteredOAuth2AuthorizedClient("google") OAuth2AuthorizedClient user,
-			@PathVariable String email, @PathVariable String date, @PathVariable String hours) {
+	public void bestHourMoreCalendars(OAuth2AuthorizedClient user, String email, String date, String hours) {
 
 		String startDate = date.concat("T00:00:00Z");
 		String endDate = date.concat("T23:59:00Z");
@@ -233,27 +302,30 @@ public class CalendarService {
 
 	}
 
-	public void getBestCombination(@RegisteredOAuth2AuthorizedClient("google") OAuth2AuthorizedClient user,
-			@PathVariable String date, @PathVariable String hours) {
+	public void getBestCombination(OAuth2AuthorizedClient user, String date, String hours, String place) {
 
 		List<LocalEvent> bestCombination = getBestHour(user, date, hours);
 
 		for (int i = 0; i < bestCombination.size(); i++) {
 			if (bestCombination.get(i).getLocation() != null) {
 				JSONObject response = mapUtils.getInfoPlace(bestCombination.get(i).getLocation());
-				
-				if(response != null) {
-					JSONObject position = response.getJSONArray(ITEMS_JSONARRAY).getJSONObject(0).getJSONObject("position");
-					
+
+				if (response != null) {
+					JSONObject position = response.getJSONArray(ITEMS_JSONARRAY).getJSONObject(0)
+							.getJSONObject(POSITION_STRING);
+
 					bestCombination.get(i).setLatitude(Float.valueOf(position.getString("lat")));
 					bestCombination.get(i).setLongitude(Float.valueOf(position.getString("lng")));
+
+					samePlace(Float.valueOf(position.getString("lng")), Float.valueOf(position.getString("lat")),
+							bestCombination.get(i), bestCombination);
 				}
 			}
 		}
-
+		minorDistance(bestCombination, place);
 	}
 
-	public void addUser(@RegisteredOAuth2AuthorizedClient("google") OAuth2AuthorizedClient user) {
+	public void addUser(OAuth2AuthorizedClient user) {
 
 		JSONObject jsonObject = new JSONObject(createEvent());
 
@@ -267,8 +339,7 @@ public class CalendarService {
 		// TODO
 	}
 
-	public void deleteUser(@RegisteredOAuth2AuthorizedClient("google") OAuth2AuthorizedClient user,
-			@PathVariable String idEvent) {
+	public void deleteUser(OAuth2AuthorizedClient user, String idEvent) {
 
 		calendarUtils.deleteEvent(user, idEvent);
 	}

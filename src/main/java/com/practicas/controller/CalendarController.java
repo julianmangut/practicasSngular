@@ -40,7 +40,7 @@ public class CalendarController {
 	@GetMapping(path = "/bestCombination/place={place}/{date}/{hours}")
 	public void getBestCombination(@RegisteredOAuth2AuthorizedClient("google") OAuth2AuthorizedClient user,
 			@PathVariable String place, @PathVariable String date, @PathVariable String hours) {
-		calendarService.getBestCombination(user, date, hours);
+		calendarService.getBestCombination(user, date, hours, place);
 	}
 	
 	@PostMapping(path = "/addEvent")

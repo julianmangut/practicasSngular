@@ -35,8 +35,7 @@ public class CalendarUtils {
 		try (Response response = client.newCall(request).execute()) {
 			return new JSONObject(response.body().string());
 		} catch (IOException e) {
-			LOGGER.log(Level.INFO, ERROR);
-			e.printStackTrace();
+			LOGGER.log(Level.SEVERE, ERROR);
 		}
 		return null;
 
@@ -54,8 +53,7 @@ public class CalendarUtils {
 		try (Response response = client.newCall(request).execute()) {
 			return new JSONObject(response.body().string());
 		} catch (IOException e) {
-			LOGGER.log(Level.INFO, ERROR);
-			e.printStackTrace();
+			LOGGER.log(Level.SEVERE, ERROR);
 		}
 		return null;
 
@@ -74,8 +72,7 @@ public class CalendarUtils {
 		try (Response response = client.newCall(request).execute()) {
 			return new JSONObject(response.body().string());
 		} catch (IOException e) {
-			LOGGER.log(Level.INFO, ERROR);
-			e.printStackTrace();
+			LOGGER.log(Level.SEVERE, ERROR);
 		}
 		return null;
 
@@ -96,8 +93,7 @@ public class CalendarUtils {
 
 			return new JSONObject(response.body().string());
 		} catch (IOException e) {
-			LOGGER.log(Level.INFO, ERROR);
-			e.printStackTrace();
+			LOGGER.log(Level.SEVERE, ERROR);
 		}
 		return null;
 
@@ -118,8 +114,7 @@ public class CalendarUtils {
 			LOGGER.log(Level.INFO, CORRECT);
 		} catch (IOException e) {
 
-			LOGGER.log(Level.INFO, ERROR);
-			e.printStackTrace();
+			LOGGER.log(Level.SEVERE, ERROR);
 		}
 	}
 
