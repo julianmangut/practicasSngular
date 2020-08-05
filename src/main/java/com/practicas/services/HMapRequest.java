@@ -12,7 +12,7 @@ import okhttp3.Request;
 import okhttp3.Response;
 
 @Service
-public class MapUtils {
+public class HMapRequest {
 
 	private static final Logger LOGGER = Logger.getLogger("practicas.utils.MapUtils");
 

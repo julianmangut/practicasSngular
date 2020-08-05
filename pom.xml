@@ -40,9 +40,6 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-oauth2-client</artifactId>
 		</dependency>
-		<!-- <dependency> <groupId>org.springframework.security.oauth.boot</groupId> 
-			<artifactId>spring-security-oauth2-autoconfigure</artifactId> <version>2.3.1.RELEASE</version> 
-			</dependency> -->
 		<dependency>
 			<groupId>com.google.auth</groupId>
 			<artifactId>google-auth-library-oauth2-http</artifactId>
@@ -102,6 +99,9 @@
 			<scope>test</scope>
 		</dependency>
 
+		
+		
+		
 	</dependencies>
 
 	<build>
@@ -113,4 +113,15 @@
 		</plugins>
 	</build>
 
+	<dependencyManagement>
+		<dependencies>
+			<dependency>
+				<groupId>org.springframework.cloud</groupId>
+				<artifactId>spring-cloud-dependencies</artifactId>
+				<version>Hoxton.SR6</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
 </project>

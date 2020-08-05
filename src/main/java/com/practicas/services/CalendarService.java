@@ -39,10 +39,10 @@ public class CalendarService {
 	private static final String POSITION_STRING = "position";
 
 	@Autowired
-	private CalendarUtils calendarUtils;
+	private GCalendarRequest calendarUtils;
 
 	@Autowired
-	private MapUtils mapUtils;
+	private HMapRequest mapUtils;
 
 	private Event createEvent() {
 

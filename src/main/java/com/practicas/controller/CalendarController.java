@@ -19,7 +19,7 @@ public class CalendarController {
 	
 	@Autowired
 	CalendarService calendarService;
-
+	
 	@GetMapping
 	public void getUser(@RegisteredOAuth2AuthorizedClient("google") OAuth2AuthorizedClient user) {
 		calendarService.getUser(user);

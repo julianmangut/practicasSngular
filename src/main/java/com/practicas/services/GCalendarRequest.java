@@ -15,7 +15,7 @@ import okhttp3.RequestBody;
 import okhttp3.Response;
 
 @Service
-public class CalendarUtils {
+public class GCalendarRequest {
 
 	private static final Logger LOGGER = Logger.getLogger("practicas.utils.CalendarUtils");
 
