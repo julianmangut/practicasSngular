@@ -28,7 +28,7 @@ import com.practicas.model.LocalEvent;
 public class CalendarService {
 
 	private static final DateTimeFormatter formatter = DateTimeFormat.forPattern("HH:mm:ss");
-	private static final Logger LOGGER = Logger.getLogger("practicas.controller.UserController");
+	private static final Logger LOGGER = Logger.getLogger(CalendarService.class.toString());
 
 	private static final String ITEMS_JSONARRAY = "items";
 	private static final String START_STRING = "start";
@@ -163,31 +163,36 @@ public class CalendarService {
 
 		for (int i = 0; i < infoEvents.size(); i++) {
 			if (infoEvents.get(i).getPreviousEvent().getLocation() != null) {
-				JSONObject response = mapUtils.getDistanceBetweenPlaces(String.valueOf(infoEvents.get(i).getLatitude()),
-						String.valueOf(infoEvents.get(i).getLongitude()), place);
+				JSONObject response = mapUtils.getDistanceBetweenPlaces(infoEvents.get(i));
 
 				if (response != null) {
+
+					JSONObject section = response.getJSONArray("routes").getJSONObject(0).getJSONArray("sections")
+							.getJSONObject(0);
+
+					JSONObject responseBetter = mapUtils.getBestOption(infoEvents.get(i), section.getString("polyline"),
+							place);
+
+					JSONObject responseMediumRoute = mapUtils.getDistanceBetweenPlaces(infoEvents.get(i),
+							responseBetter.getJSONArray(ITEMS_JSONARRAY).getJSONObject(0).getJSONObject("position")
+									.getString("lat"),
+							responseBetter.getJSONArray(ITEMS_JSONARRAY).getJSONObject(0).getJSONObject("position")
+									.getString("lng"));
+
 					float distance = Float.parseFloat(
-							response.getJSONArray(ITEMS_JSONARRAY).getJSONObject(0).getString(DISTANCE_STRING));
+							responseBetter.getJSONArray(ITEMS_JSONARRAY).getJSONObject(0).getString(DISTANCE_STRING))
+							+ Float.parseFloat(
+									responseMediumRoute.getJSONArray("routes").getJSONObject(0).getJSONArray("sections")
+											.getJSONObject(0).getJSONObject("summary").getString("length"));
 
-					if (distance < minorDistanceCalculate) {
-						JSONObject childResponse = mapUtils.getDistanceBetweenPlaces(
-								response.getJSONArray(ITEMS_JSONARRAY).getJSONObject(0).getJSONObject(POSITION_STRING)
-										.getString("lat"),
-								response.getJSONArray(ITEMS_JSONARRAY).getJSONObject(0).getJSONObject(POSITION_STRING)
-										.getString("lng"),
-								infoEvents.get(i).getPreviousEvent().getLocation());
+					if ((distance - Float.parseFloat(
+							section.getJSONObject("summary").getString("length"))) < minorDistanceCalculate) {
 
-						if (childResponse != null) {
-							float childDistance = Float.parseFloat(childResponse.getJSONArray(ITEMS_JSONARRAY)
-									.getJSONObject(0).getString(DISTANCE_STRING));
-
-							if (childDistance + distance < minorDistanceCalculate) {
-								minorDistanceCalculate = childDistance + distance;
-								finalEvent = infoEvents.get(i);
-							}
-						}
+						minorDistanceCalculate = distance
+								- Float.parseFloat(section.getJSONObject("summary").getString("length"));
+						finalEvent = infoEvents.get(i);
 					}
+
 				}
 			}
 		}
@@ -322,7 +327,9 @@ public class CalendarService {
 				}
 			}
 		}
-		minorDistance(bestCombination, place);
+		LocalEvent finalEvent = minorDistance(bestCombination, place);
+		
+		System.out.println("Evento previo : " + finalEvent.getPreviousEvent().getLocation() + " Evento siguiente : " + finalEvent.getLocation());
 	}
 
 	public void addUser(OAuth2AuthorizedClient user) {
