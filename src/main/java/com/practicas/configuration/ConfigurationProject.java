@@ -26,13 +26,10 @@ public class ConfigurationProject implements ApplicationListener<InteractiveAuth
 	public void onApplicationEvent(InteractiveAuthenticationSuccessEvent event) {
 		System.out.println("User Logged In");
 
-		AuthenticationUtils.getAuthenticationUtils()
-				.setAuthentication(SecurityContextHolder.getContext().getAuthentication());
-
 		DefaultOAuth2User userDetails = (DefaultOAuth2User) SecurityContextHolder.getContext().getAuthentication()
 				.getPrincipal();
 
-		if (userDAO.existsById(userDetails.getAttribute("email").toString())) {
+		if (!userDAO.existsById(userDetails.getAttribute("email").toString())) {
 			UserModel user = new UserModel();
 			user.setEmail(userDetails.getAttribute("email").toString());
 			userDAO.save(user);
@@ -44,6 +41,8 @@ public class ConfigurationProject implements ApplicationListener<InteractiveAuth
 	@Bean
 	@Lazy
 	public EmailService prueba() {
+		AuthenticationUtils.getAuthenticationUtils()
+				.setAuthentication(SecurityContextHolder.getContext().getAuthentication());
 		return new EmailService();
 	}
 
