@@ -21,6 +21,14 @@ public class HMapRequest {
 	private static final String ERROR = "Error while processing request";
 	private static final String CORRECT = "The request was process correctly";
 
+	/**
+	 * Create a request for obtain information about a location given by parameter.
+	 * 
+	 * @param location : Location that we want to know information.
+	 * 
+	 * @return : Response of the request, JSON with the information about the
+	 *         location.
+	 */
 	public JSONObject getInfoPlace(String location) {
 
 		OkHttpClient client = new OkHttpClient().newBuilder().build();
@@ -36,6 +44,10 @@ public class HMapRequest {
 
 	}
 
+	/**
+	 * @param localEvent
+	 * @return
+	 */
 	public JSONObject getDistanceBetweenPlaces(LocalEvent localEvent) {
 
 		OkHttpClient client = new OkHttpClient().newBuilder().build();
@@ -54,6 +66,12 @@ public class HMapRequest {
 
 	}
 
+	/**
+	 * @param localEvent
+	 * @param latitudePlace
+	 * @param longitudePlace
+	 * @return
+	 */
 	public JSONObject getDistanceBetweenPlaces(LocalEvent localEvent, String latitudePlace, String longitudePlace) {
 
 		OkHttpClient client = new OkHttpClient().newBuilder().build();
@@ -72,13 +90,20 @@ public class HMapRequest {
 
 	}
 
+	/**
+	 * @param localEvent
+	 * @param polyline
+	 * @param place
+	 * @return
+	 */
 	public JSONObject getBestOption(LocalEvent localEvent, String polyline, String place) {
 
 		OkHttpClient client = new OkHttpClient().newBuilder().build();
 		Request request = new Request.Builder().url(
 				"https://discover.search.hereapi.com/v1/discover?apiKey=gHk4apBrrcKjcUNdft0h7lgEEhOhZlxzd5he90aB42A&at="
-						+ localEvent.getPreviousEvent().getLatitude() + "," + localEvent.getPreviousEvent().getLongitude() + "&limit=10&route=" + polyline
-						+ ";w=1000&q=" + place)
+						+ localEvent.getPreviousEvent().getLatitude() + ","
+						+ localEvent.getPreviousEvent().getLongitude() + "&limit=1&route=" + polyline + ";w=2000&q="
+						+ place)
 				.method("GET", null).build();
 
 		try (Response response = client.newCall(request).execute()) {

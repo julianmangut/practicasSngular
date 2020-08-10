@@ -22,6 +22,13 @@ public class GEmailRequest {
 	private static final String AUTHORIZATION_HEADER = "Authorization";
 	private static final String BEARER_TOKEN = "Bearer ";
 
+	/**
+	 * 
+	 * 
+	 * @param user :
+	 * 
+	 * @return :
+	 */
 	public JSONObject getEmailsList(OAuth2AuthorizedClient user) {
 		OkHttpClient client = new OkHttpClient().newBuilder().build();
 		Request request = new Request.Builder().url(URL + "julianmangut@gmail.com/messages?maxResults=10")
@@ -36,10 +43,18 @@ public class GEmailRequest {
 		return null;
 	}
 
+	/**
+	 * 
+	 * 
+	 * @param user      :
+	 * @param idMessage :
+	 * 
+	 * @return :
+	 */
 	public JSONObject getEmail(OAuth2AuthorizedClient user, String idMessage) {
 
 		OkHttpClient client = new OkHttpClient().newBuilder().build();
-		Request request = new Request.Builder().url(URL + "me/messages/"+idMessage+"?format=metadata")
+		Request request = new Request.Builder().url(URL + "me/messages/" + idMessage + "?format=metadata")
 				.method("GET", null)
 				.addHeader(AUTHORIZATION_HEADER, BEARER_TOKEN + user.getAccessToken().getTokenValue()).build();
 

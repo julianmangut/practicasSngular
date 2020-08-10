@@ -32,6 +32,11 @@ public class EmailService {
 	@Autowired
 	private EmailListDAO emailListDAO;
 
+	/**
+	 * Control the authentication calling the Authentication Utils for obtain it.
+	 * 
+	 * @return : The authentication token.
+	 */
 	private OAuth2AuthorizedClient authentication() {
 		Authentication authentication = AuthenticationUtils.getAuthenticationUtils().getAuthentication();
 
@@ -45,6 +50,12 @@ public class EmailService {
 		return null;
 	}
 
+	/**
+	 * Create an Email and save it on the DB.
+	 * 
+	 * @param emailInformation : JSON with the information of the Email.
+	 * @param userModel        : Information of the actual User.
+	 */
 	private void createSaveEmail(JSONObject emailInformation, UserModel userModel) {
 		EmailModel email = new EmailModel();
 		email.setId(emailInformation.getString("id"));
@@ -52,6 +63,16 @@ public class EmailService {
 		emailListDAO.save(email);
 	}
 
+	/**
+	 * Remove the Emails that have been process previously and that can be found on
+	 * the DB.
+	 * 
+	 * @param listId    : List of ID of emails that are on the DB.
+	 * @param emailList : JSON with the emails that have been obtain from the
+	 *                  request to the Calendar API.
+	 *
+	 * @return : List of ID of emails that need to be process.
+	 */
 	private JSONArray recursiveReading(List<String> listId, JSONArray emailList) {
 		for (int i = emailList.length() / 2; i < emailList.length(); i++) {
 			if (listId.contains(emailList.getJSONObject(i).getString("id"))) {
@@ -69,6 +90,13 @@ public class EmailService {
 		return emailList;
 	}
 
+	/**
+	 * Do the calls to the DB and verify that the list is not empty.
+	 * 
+	 * @param emailList : JSON with the list of emails given by the request done to the API.
+	 * 
+	 * @return : JSON returned by the method recursiveReading.
+	 */
 	private JSONArray cleanList(JSONArray emailList) {
 
 		List<String> listId = emailListDAO.readListId();
@@ -80,6 +108,9 @@ public class EmailService {
 
 	}
 
+	/**
+	 * Do the Request and control if the response have an Email with the exact values on the header.
+	 */
 	@Scheduled(fixedDelay = 60000)
 	public void controlEmail() {
 		OAuth2AuthorizedClient user = authentication();
@@ -111,7 +142,7 @@ public class EmailService {
 							String affair = responseInfoEmail.getJSONObject("payload").getJSONArray("headers")
 									.getJSONObject(3).get("value").toString().trim();
 
-							if (affair.replaceAll("\\s","").startsWith("Calendar:")) {
+							if (affair.replaceAll("\\s", "").startsWith("Calendar:")) {
 
 								String cleanAffair = affair.substring(affair.indexOf(":") + 1);
 

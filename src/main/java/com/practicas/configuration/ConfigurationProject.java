@@ -22,6 +22,9 @@ public class ConfigurationProject implements ApplicationListener<InteractiveAuth
 	@Autowired
 	private UserDAO userDAO;
 
+	/**
+	 *
+	 */
 	@Override
 	public void onApplicationEvent(InteractiveAuthenticationSuccessEvent event) {
 		System.out.println("User Logged In");
@@ -38,6 +41,9 @@ public class ConfigurationProject implements ApplicationListener<InteractiveAuth
 		prueba();
 	}
 
+	/**
+	 * @return
+	 */
 	@Bean
 	@Lazy
 	public EmailService prueba() {

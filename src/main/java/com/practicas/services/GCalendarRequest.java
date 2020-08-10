@@ -25,6 +25,14 @@ public class GCalendarRequest {
 	private static final String AUTHORIZATION_HEADER = "Authorization";
 	private static final String BEARER_TOKEN = "Bearer ";
 
+	/**
+	 * 
+	 * 
+	 * @param user :
+	 * @param date :
+	 * 
+	 * @return :
+	 */
 	public JSONObject getEvents2DaysBack(OAuth2AuthorizedClient user, String date) {
 
 		OkHttpClient client = new OkHttpClient().newBuilder().build();
@@ -41,6 +49,15 @@ public class GCalendarRequest {
 
 	}
 
+	/**
+	 * 
+	 * 
+	 * @param user      :
+	 * @param startDate :
+	 * @param endDate   :
+	 * 
+	 * @return :
+	 */
 	public JSONObject getBestHourOwnCalendar(OAuth2AuthorizedClient user, String startDate, String endDate) {
 
 		OkHttpClient client = new OkHttpClient().newBuilder().build();
@@ -59,6 +76,16 @@ public class GCalendarRequest {
 
 	}
 
+	/**
+	 * 
+	 * 
+	 * @param user      :
+	 * @param email     :
+	 * @param startDate :
+	 * @param endDate   :
+	 * 
+	 * @return
+	 */
 	public JSONObject getBestHourMoreCalendars(OAuth2AuthorizedClient user, String email, String startDate,
 			String endDate) {
 
@@ -78,6 +105,14 @@ public class GCalendarRequest {
 
 	}
 
+	/**
+	 * 
+	 * 
+	 * @param user       :
+	 * @param jsonObject :
+	 * 
+	 * @return :
+	 */
 	public JSONObject addEvent(OAuth2AuthorizedClient user, JSONObject jsonObject) {
 
 		MediaType json = MediaType.parse("application/json; charset=utf-8");
@@ -99,6 +134,12 @@ public class GCalendarRequest {
 
 	}
 
+	/**
+	 * 
+	 * 
+	 * @param user    :
+	 * @param idEvent :
+	 */
 	public void deleteEvent(OAuth2AuthorizedClient user, String idEvent) {
 
 		OkHttpClient client = new OkHttpClient().newBuilder().build();
