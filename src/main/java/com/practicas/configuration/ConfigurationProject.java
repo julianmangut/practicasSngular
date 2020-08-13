@@ -38,7 +38,7 @@ public class ConfigurationProject implements ApplicationListener<InteractiveAuth
 			userDAO.save(user);
 		}
 
-		prueba();
+		emailScheduled();
 	}
 
 	/**
@@ -46,9 +46,8 @@ public class ConfigurationProject implements ApplicationListener<InteractiveAuth
 	 */
 	@Bean
 	@Lazy
-	public EmailService prueba() {
-		AuthenticationUtils.getAuthenticationUtils()
-				.setAuthentication(SecurityContextHolder.getContext().getAuthentication());
+	public EmailService emailScheduled() {
+		AuthenticationUtils.getAuthenticationUtils().setAuthentication();
 		return new EmailService();
 	}
 

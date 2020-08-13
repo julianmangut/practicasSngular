@@ -38,6 +38,7 @@ public class EmailService {
 	 * @return : The authentication token.
 	 */
 	private OAuth2AuthorizedClient authentication() {
+		// AuthenticationUtils.getAuthenticationUtils().setAuthentication();
 		Authentication authentication = AuthenticationUtils.getAuthenticationUtils().getAuthentication();
 
 		if (authentication != null) {
@@ -59,7 +60,7 @@ public class EmailService {
 	private void createSaveEmail(JSONObject emailInformation, UserModel userModel) {
 		EmailModel email = new EmailModel();
 		email.setId(emailInformation.getString("id"));
-		email.setEmail(userModel);
+		email.setEmailId(userModel);
 		emailListDAO.save(email);
 	}
 
@@ -93,7 +94,8 @@ public class EmailService {
 	/**
 	 * Do the calls to the DB and verify that the list is not empty.
 	 * 
-	 * @param emailList : JSON with the list of emails given by the request done to the API.
+	 * @param emailList : JSON with the list of emails given by the request done to
+	 *                  the API.
 	 * 
 	 * @return : JSON returned by the method recursiveReading.
 	 */
@@ -109,7 +111,8 @@ public class EmailService {
 	}
 
 	/**
-	 * Do the Request and control if the response have an Email with the exact values on the header.
+	 * Do the Request and control if the response have an Email with the exact
+	 * values on the header.
 	 */
 	@Scheduled(fixedDelay = 60000)
 	public void controlEmail() {

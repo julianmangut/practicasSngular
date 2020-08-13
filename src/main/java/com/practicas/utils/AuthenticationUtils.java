@@ -1,6 +1,7 @@
 package com.practicas.utils;
 
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 public class AuthenticationUtils {
 
@@ -24,8 +25,8 @@ public class AuthenticationUtils {
 		return authentication;
 	}
 
-	public void setAuthentication(Authentication authentication) {
-		this.authentication = authentication;
+	public void setAuthentication() {
+		authentication = SecurityContextHolder.getContext().getAuthentication();
 	}
 
 }

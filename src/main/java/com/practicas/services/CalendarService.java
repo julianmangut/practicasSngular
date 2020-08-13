@@ -6,6 +6,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -89,7 +90,7 @@ public class CalendarService {
 
 		LocalEvent localEvent;
 		List<LocalEvent> bestCombination = new LinkedList<>();
-
+		
 		for (int i = 0; i < eventsInfo.length(); i++) {
 
 			try {
@@ -170,20 +171,18 @@ public class CalendarService {
 	 */
 	private void samePlace(LocalEvent processEvent, List<LocalEvent> bestCombination) {
 
-		for (int j = 0; j < bestCombination.size(); j++) {
-			if ((bestCombination.get(j).getLatitude() == 0.0)
-					|| (bestCombination.get(j).getPreviousEvent().getLatitude() == 0.0)) {
-				if ((bestCombination.get(j).getLatitude() == 0.0)
-						&& bestCombination.get(j).getLocation().equals(processEvent.getLocation())) {
-					bestCombination.get(j).setLatitude(processEvent.getLatitude());
-					bestCombination.get(j).setLongitude(processEvent.getLongitude());
-				} else if ((bestCombination.get(j).getPreviousEvent().getLatitude() == 0.0)
-						&& bestCombination.get(j).getPreviousEvent().getLocation().equals(processEvent.getLocation())) {
-					bestCombination.get(j).getPreviousEvent().setLatitude(processEvent.getLatitude());
-					bestCombination.get(j).getPreviousEvent().setLongitude(processEvent.getLongitude());
+		bestCombination.forEach(localEvent -> {
+			if ((localEvent.getLatitude() == 0.0) || (localEvent.getPreviousEvent().getLatitude() == 0.0)) {
+				if ((localEvent.getLatitude() == 0.0) && localEvent.getLocation().equals(processEvent.getLocation())) {
+					localEvent.setLatitude(processEvent.getLatitude());
+					localEvent.setLongitude(processEvent.getLongitude());
+				} else if ((localEvent.getPreviousEvent().getLatitude() == 0.0) && (localEvent.getPreviousEvent().getLocation() != null
+						&& localEvent.getPreviousEvent().getLocation().equals(processEvent.getLocation()))) {
+					localEvent.getPreviousEvent().setLatitude(processEvent.getLatitude());
+					localEvent.getPreviousEvent().setLongitude(processEvent.getLongitude());
 				}
 			}
-		}
+		});
 
 	}
 
@@ -200,22 +199,24 @@ public class CalendarService {
 	 */
 	private LocalEvent minorDistance(List<LocalEvent> infoEvents, String place) {
 
-		float minorDistanceCalculate = 99999;
-		LocalEvent finalEvent = null;
+		AtomicReference<Float> minorDistanceCalculate = new AtomicReference<>();
+		minorDistanceCalculate.set(Float.valueOf(99999));
 
-		for (int i = 0; i < infoEvents.size(); i++) {
-			if (infoEvents.get(i).getPreviousEvent().getLocation() != null) {
-				JSONObject response = mapUtils.getDistanceBetweenPlaces(infoEvents.get(i));
+		AtomicReference<LocalEvent> finalEvent = new AtomicReference<>();
+
+		infoEvents.forEach(localEvent -> {
+			if (localEvent.getPreviousEvent().getLocation() != null) {
+				JSONObject response = mapUtils.getDistanceBetweenPlaces(localEvent);
 
 				if (response != null) {
 
 					JSONObject section = response.getJSONArray("routes").getJSONObject(0).getJSONArray("sections")
 							.getJSONObject(0);
 
-					JSONObject responseBetter = mapUtils.getBestOption(infoEvents.get(i), section.getString("polyline"),
+					JSONObject responseBetter = mapUtils.getBestOption(localEvent, section.getString("polyline"),
 							place);
 
-					JSONObject responseMediumRoute = mapUtils.getDistanceBetweenPlaces(infoEvents.get(i),
+					JSONObject responseMediumRoute = mapUtils.getDistanceBetweenPlaces(localEvent.getPreviousEvent(),
 							responseBetter.getJSONArray(ITEMS_JSONARRAY).getJSONObject(0).getJSONObject("position")
 									.getString("lat"),
 							responseBetter.getJSONArray(ITEMS_JSONARRAY).getJSONObject(0).getJSONObject("position")
@@ -226,19 +227,22 @@ public class CalendarService {
 							+ Float.parseFloat(
 									responseMediumRoute.getJSONArray("routes").getJSONObject(0).getJSONArray("sections")
 											.getJSONObject(0).getJSONObject("summary").getString("length"));
-
+					System.out.println(minorDistanceCalculate.get());
+					System.out.println(distance - Float.parseFloat(
+							section.getJSONObject("summary").getString("length")));
 					if ((distance - Float.parseFloat(
-							section.getJSONObject("summary").getString("length"))) < minorDistanceCalculate) {
+							section.getJSONObject("summary").getString("length"))) < minorDistanceCalculate.get()) {
 
-						minorDistanceCalculate = distance
-								- Float.parseFloat(section.getJSONObject("summary").getString("length"));
-						finalEvent = infoEvents.get(i);
+						minorDistanceCalculate
+								.set(distance - Float.parseFloat(section.getJSONObject("summary").getString("length")));
+						finalEvent.set(localEvent);
 					}
 
 				}
 			}
-		}
-		return finalEvent;
+		});
+
+		return finalEvent.get();
 	}
 
 	/**
@@ -253,6 +257,9 @@ public class CalendarService {
 		JSONArray sortedJSON = new JSONArray();
 
 		List<JSONObject> jsonValues = new ArrayList<>();
+		
+//		valuesJSON.forEach(value -> jsonValues.add((JSONObject) value));
+		
 		for (int i = 0; i < valuesJSON.length(); i++) {
 			jsonValues.add(valuesJSON.getJSONObject(i));
 		}
@@ -366,9 +373,7 @@ public class CalendarService {
 
 					JSONArray elements = response.getJSONArray(ITEMS_JSONARRAY);
 
-					for (int j = 0; j < elements.length(); j++) {
-						arr.put(elements.get(j));
-					}
+					elements.forEach(arr::put);
 				}
 			}
 
@@ -394,21 +399,22 @@ public class CalendarService {
 
 		List<LocalEvent> bestCombination = getBestHour(user, date, hours);
 
-		for (int i = 0; i < bestCombination.size(); i++) {
-			if (bestCombination.get(i).getLocation() != null) {
-				JSONObject response = mapUtils.getInfoPlace(bestCombination.get(i).getLocation());
+		bestCombination.forEach(localEvent -> {
+			if (localEvent.getLocation() != null) {
+				JSONObject response = mapUtils.getInfoPlace(localEvent.getLocation());
 
 				if (response != null) {
 					JSONObject position = response.getJSONArray(ITEMS_JSONARRAY).getJSONObject(0)
 							.getJSONObject(POSITION_STRING);
 
-					bestCombination.get(i).setLatitude(Float.valueOf(position.getString("lat")));
-					bestCombination.get(i).setLongitude(Float.valueOf(position.getString("lng")));
+					localEvent.setLatitude(Float.valueOf(position.getString("lat")));
+					localEvent.setLongitude(Float.valueOf(position.getString("lng")));
 
-					samePlace(bestCombination.get(i), bestCombination);
+					samePlace(localEvent, bestCombination);
 				}
 			}
-		}
+		});
+
 		LocalEvent finalEvent = minorDistance(bestCombination, place);
 
 		System.out.println("Evento previo : " + finalEvent.getPreviousEvent().getLocation() + " Evento siguiente : "
